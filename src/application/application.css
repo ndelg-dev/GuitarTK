@@ -1,0 +1,21 @@
+.dashboard {
+    -fx-background-color: #333333;
+    -fx-padding: 20;
+}
+
+.dashboard-title {
+    -fx-fill: white;
+    -fx-font-size: 30px;
+    -fx-font-weight: Bold;
+}
+
+.menu-button {
+    -fx-background-color: #505050;
+    -fx-font-size: 20px;
+    -fx-text-fill: white;
+    -fx-background-radius: 8;
+}
+
+.menu-button:hover {
+    -fx-background-color: #666666;
+}
