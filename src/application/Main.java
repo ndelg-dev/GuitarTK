@@ -12,6 +12,8 @@ import javafx.stage.Stage;
 
 public class Main extends Application {
 	
+	private MetronomeView currentMetronome;
+	
 	@Override
 	public void start(Stage stage) {
 		BorderPane root = new BorderPane();
@@ -28,7 +30,12 @@ public class Main extends Application {
         btnMetronome.setPrefWidth(150);
         btnMetronome.setPrefHeight(45);
         btnMetronome.setOnAction(e -> {
-        	root.setCenter(new MetronomeView());
+        	if (currentMetronome != null && currentMetronome.isRunning()) {
+                currentMetronome.stop();
+            }
+
+            currentMetronome = new MetronomeView();
+            root.setCenter(currentMetronome);
         });
         
         Button btnTuner = new Button("Tuner");

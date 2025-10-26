@@ -1,52 +1,62 @@
 package application;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
+import javafx.animation.AnimationTimer;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.layout.Pane;
-import javafx.scene.media.AudioClip;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
-import javafx.util.Duration;
+
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.AudioInputStream;
 
 public class MetronomeView extends Pane {
 
-    private Timeline timeline;
     private boolean running = false;
-
     private int bpm = 120;
 
     private Label bpmLabel;
     private Slider bpmSlider;
     private Spinner<Integer> bpmSpinner;
-    
-    private Circle circle1;
-    private Circle circle2;
-    private Circle circle3;
-    private Circle circle4;
-    
-    private int currentBeat = 0; //0 - 3
-    
+
+    private Circle circle1, circle2, circle3, circle4;
+    private int currentBeat = 0; // 0-3
+
+    private AnimationTimer timer;
+    private long lastTickTime;
+    private long intervalNanos;
+
     private Button startStopButton;
 
-    private AudioClip tickSound;
-    private AudioClip tickSoundHigh;
+    private Clip tickClip;
+    private Clip tickHighClip;
 
     public MetronomeView() {
         setPrefSize(600, 600);
-        
-        tickSound = new AudioClip(getClass().getResource("/sounds/tick.wav").toExternalForm());
-        tickSoundHigh = new AudioClip(getClass().getResource("/sounds/sharpTick.wav").toExternalForm());
-        
+
+        // Cargar sonidos usando Clip
+        try {
+            AudioInputStream ais = AudioSystem.getAudioInputStream(getClass().getResource("/sounds/tick.wav"));
+            tickClip = AudioSystem.getClip();
+            tickClip.open(ais);
+
+            AudioInputStream aisHigh = AudioSystem.getAudioInputStream(getClass().getResource("/sounds/sharpTick.wav"));
+            tickHighClip = AudioSystem.getClip();
+            tickHighClip.open(aisHigh);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         bpmLabel = new Label("BPM: " + bpm);
         bpmLabel.setLayoutX(55);
         bpmLabel.setLayoutY(80);
 
-        bpmSlider = new Slider(20, 280, bpm);
+        bpmSlider = new Slider(20, 260, bpm);
         bpmSlider.setLayoutX(50);
         bpmSlider.setLayoutY(100);
         bpmSlider.setShowTickMarks(true);
@@ -60,13 +70,14 @@ public class MetronomeView extends Pane {
         bpmSpinner.setLayoutY(150);
         bpmSpinner.setEditable(true);
         bpmSpinner.getEditor().textProperty().addListener((obs, oldVal, newVal) -> {
-            if (!newVal.matches("\\d*")) { //solo dígitos
+            if (!newVal.matches("\\d*")) {
                 bpmSpinner.getEditor().setText(newVal.replaceAll("[^\\d]", ""));
             }
         });
-        SpinnerValueFactory<Integer> valueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(20, 280, bpm, 1);
+        SpinnerValueFactory<Integer> valueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(20, 260, bpm, 1);
         bpmSpinner.setValueFactory(valueFactory);
 
+        // Círculos indicadores
         circle1 = new Circle(20, Color.RED);
         circle2 = new Circle(20, Color.WHITE);
         circle3 = new Circle(20, Color.WHITE);
@@ -83,84 +94,114 @@ public class MetronomeView extends Pane {
         circle4.setLayoutY(160);
 
         getChildren().addAll(circle1, circle2, circle3, circle4);
-        
+
+        // Listeners para slider y spinner
         bpmSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
             bpm = newVal.intValue();
             bpmLabel.setText("BPM: " + bpm);
             bpmSpinner.getValueFactory().setValue(bpm);
-            if (running) restartTimeline();
+            if (running) restartTimer();
         });
 
         bpmSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
             bpm = newVal;
             bpmLabel.setText("BPM: " + bpm);
             bpmSlider.setValue(bpm);
-            if (running) restartTimeline();
+            if (running) restartTimer();
         });
 
+        // Botón start/stop
         startStopButton = new Button("Start");
         startStopButton.setLayoutX(50);
         startStopButton.setLayoutY(220);
         startStopButton.setOnAction(e -> {
-            if (running){
-            	stop();
-            	circle1.setFill(Color.RED);
-                circle2.setFill(Color.WHITE);
-                circle3.setFill(Color.WHITE);
-                circle4.setFill(Color.WHITE);
-                
+            if (running) {
+                stop();
+                resetCircles();
                 currentBeat = 0;
+                circle1.setFill(Color.RED);
+            } else {
+                currentBeat = 0;
+                start();
             }
-            else start();
         });
 
         getChildren().addAll(bpmLabel, bpmSlider, bpmSpinner, startStopButton);
     }
 
-    
     private void start() {
         running = true;
         startStopButton.setText("Stop");
-        startTimeline();
+        startTimer();
     }
 
-    private void stop() {
+    public void stop() {
         running = false;
         startStopButton.setText("Start");
-        if (timeline != null) timeline.stop();
+        if (timer != null) timer.stop();
     }
 
-    private void restartTimeline() {
-        if (timeline != null) timeline.stop();
-        startTimeline();
+    private void restartTimer() {
+        if (timer != null) timer.stop();
+        startTimer();
     }
 
-    private void startTimeline() {
-        double interval = 60000.0 / bpm; //intervalo en ms
-        timeline = new Timeline(new KeyFrame(Duration.millis(interval), e -> tick()));
-        timeline.setCycleCount(Timeline.INDEFINITE);
-        timeline.play();
+    private void startTimer() {
+        intervalNanos = (long) ((60.0 / bpm) * 1_000_000_000L);
+        lastTickTime = System.nanoTime();
+
+        // Primer tick inmediato
+        tick();
+
+        timer = new AnimationTimer() {
+            @Override
+            public void handle(long now) {
+                if (now - lastTickTime >= intervalNanos) {
+                    tick();
+                    lastTickTime += intervalNanos;
+                }
+            }
+        };
+
+        timer.start();
     }
 
     private void tick() {
+        resetCircles();
+
+        switch (currentBeat) {
+            case 0 -> circle1.setFill(Color.GREEN);
+            case 1 -> circle2.setFill(Color.GREEN);
+            case 2 -> circle3.setFill(Color.GREEN);
+            case 3 -> circle4.setFill(Color.GREEN);
+        }
+
+        try {
+            if (currentBeat == 0) {
+                tickHighClip.stop();
+                tickHighClip.setFramePosition(0);
+                tickHighClip.start();
+            } else {
+                tickClip.stop();
+                tickClip.setFramePosition(0);
+                tickClip.start();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        currentBeat = (currentBeat + 1) % 4;
+    }
+
+    private void resetCircles() {
         circle1.setFill(Color.WHITE);
         circle2.setFill(Color.WHITE);
         circle3.setFill(Color.WHITE);
         circle4.setFill(Color.WHITE);
-        
-        switch(currentBeat) {
-        	case 0 -> circle1.setFill(Color.GREEN);
-        	case 1 -> circle2.setFill(Color.GREEN);
-        	case 2 -> circle3.setFill(Color.GREEN);
-        	case 3 -> circle4.setFill(Color.GREEN);
-        }
-        
-        if(currentBeat == 0) {
-        	tickSoundHigh.play();
-        } else {
-        	tickSound.play();
-        }
-        
-        currentBeat = (currentBeat + 1) % 4;
     }
+    
+    public boolean isRunning() {
+        return running;
+    }
+
 }
