@@ -27,6 +27,9 @@ public class Main extends Application {
         btnMetronome.getStyleClass().add("menu-button");
         btnMetronome.setPrefWidth(150);
         btnMetronome.setPrefHeight(45);
+        btnMetronome.setOnAction(e -> {
+        	root.setCenter(new MetronomeView());
+        });
         
         Button btnTuner = new Button("Tuner");
         btnTuner.getStyleClass().add("menu-button");
@@ -43,17 +46,11 @@ public class Main extends Application {
         
         root.setLeft(dashboard);
 
-        Pane mainArea = new Pane();
-        
-        Text hola = new Text("ejemplo");
-        hola.setX(1);
-        hola.setY(300);
-
-        mainArea.getChildren().add(hola);
+        Pane mainArea = new MetronomeView();
         
         root.setCenter(mainArea);
         
-		Scene scene = new Scene(root, 1000, 700); 
+		Scene scene = new Scene(root, 700, 400); 
 		scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 
 		stage.setResizable(false);
