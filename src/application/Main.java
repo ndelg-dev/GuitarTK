@@ -55,7 +55,7 @@ public class Main extends Application {
 
         Pane mainArea = new MetronomeView();
         
-        root.setCenter(mainArea);
+        root.setCenter(currentMetronome);
         
 		Scene scene = new Scene(root, 700, 400); 
 		scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
