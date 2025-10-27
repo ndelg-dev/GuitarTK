@@ -1,0 +1,14 @@
+.string_box{
+	-fx-background-color: #eeeeee;
+	-fx-border-style: solid;
+	-fx-border-width: 3px;
+	-fx-border-color: #606060;
+	-fx-border-radius: 3px;
+	-fx-padding: 15px;
+	-fx-font-style: oblique;
+	-fx-alignment: center;
+}
+
+Label{
+	-fx-font-size: 30px;
+}

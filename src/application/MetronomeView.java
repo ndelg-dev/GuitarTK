@@ -1,5 +1,9 @@
 package application;
 
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+
 import javafx.animation.AnimationTimer;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -10,14 +14,10 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import javax.sound.sampled.AudioInputStream;
-
 public class MetronomeView extends Pane {
 
     private boolean running = false;
-    private int bpm = 120;
+    private int bpm = 140;
 
     private Label bpmLabel;
     private Slider bpmSlider;
@@ -37,8 +37,7 @@ public class MetronomeView extends Pane {
 
     public MetronomeView() {
         setPrefSize(600, 600);
-
-        // Cargar sonidos usando Clip
+        
         try {
             AudioInputStream ais = AudioSystem.getAudioInputStream(getClass().getResource("/sounds/tick.wav"));
             tickClip = AudioSystem.getClip();

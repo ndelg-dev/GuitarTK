@@ -4,7 +4,6 @@ import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
@@ -13,6 +12,7 @@ import javafx.stage.Stage;
 public class Main extends Application {
 	
 	private MetronomeView currentMetronome;
+	private TunerView tunerView;
 	
 	@Override
 	public void start(Stage stage) {
@@ -42,6 +42,14 @@ public class Main extends Application {
         btnTuner.getStyleClass().add("menu-button");
         btnTuner.setPrefWidth(150);
         btnTuner.setPrefHeight(45);
+        btnTuner.setOnAction(e -> {
+        	if (currentMetronome != null && currentMetronome.isRunning()) {
+                currentMetronome.stop();
+            }
+        	tunerView = new TunerView();
+        	
+            root.setCenter(tunerView);
+        });
 
         Button btnLibrary = new Button("Library");
         btnLibrary.getStyleClass().add("menu-button");
@@ -53,12 +61,10 @@ public class Main extends Application {
         
         root.setLeft(dashboard);
 
-        Pane mainArea = new MetronomeView();
-        
         root.setCenter(currentMetronome);
         
 		Scene scene = new Scene(root, 700, 400); 
-		scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
+		scene.getStylesheets().add(getClass().getResource("/css/application.css").toExternalForm());
 
 		stage.setResizable(false);
 	    stage.setTitle("GuitarTk"); 
