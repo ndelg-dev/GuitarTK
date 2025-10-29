@@ -1,5 +1,7 @@
 package application;
 
+import application.audio.MicInput;
+import javafx.application.Platform;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
@@ -19,7 +21,9 @@ public class TunerView extends Pane{
 	private RadioButton a;
 	private RadioButton eb;
 	
+	private MicInput mic;
 	public RadioButton micBtn;
+	private Label tunerLabel = new Label("0 Hz");
 	
 	public TunerView(){
 		setPrefSize(600, 600);
@@ -55,12 +59,30 @@ public class TunerView extends Pane{
 		micBtn.getStyleClass().add("mic_btn");
 		micBtn.setLayoutX(54);
 		micBtn.setLayoutY(180);
+		micBtn.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
+		    if (isSelected) {
+		        if (mic == null) {
+		            mic = new MicInput(freq -> {
+		                Platform.runLater(() -> {
+		                    tunerLabel.setText(String.format("%.2f Hz", freq));
+		                });
+		            });
+		        }
+		        mic.start();
+		    } else {
+		        if (mic != null) {
+		            mic.stop();
+		        }
+		    }
+		});
 		
-		
+		tunerLabel.getStyleClass().add("tunerLabel");
+		tunerLabel.setLayoutX(80);
+		tunerLabel.setLayoutY(180);
 		
 		stringBox.getChildren().addAll(e, b, g, d, a, eb);
 		
-		getChildren().addAll(title, stringBox, micBtn);
+		getChildren().addAll(title, stringBox, micBtn, tunerLabel);
 		getStylesheets().add(getClass().getResource("/css/panel.css").toExternalForm());
 	}
 }
