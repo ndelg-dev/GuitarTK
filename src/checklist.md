@@ -7,6 +7,7 @@
 
 ## Tuner:
 	-Hacer diseño
-	-Captar mic según el botón
-	-Comparar fq
 	-Relacionar con el diesño
+	-Cerrar al cambiar
+	-Detectar cuerdas específicas
+	-CSS general
