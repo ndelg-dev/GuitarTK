@@ -61,10 +61,10 @@ public class Main extends Application {
         
         root.setLeft(dashboard);
 
-        root.setCenter(currentMetronome);
+        root.setCenter(new TunerView());
         
-		Scene scene = new Scene(root, 700, 400); 
-		scene.getStylesheets().add(getClass().getResource("/css/application.css").toExternalForm());
+		Scene scene = new Scene(root, 720, 480); 
+		scene.getStylesheets().add(getClass().getResource("/css/main.css").toExternalForm());
 
 		stage.setResizable(false);
 	    stage.setTitle("GuitarTk"); 

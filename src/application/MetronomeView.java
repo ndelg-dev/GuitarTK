@@ -5,6 +5,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 
 import javafx.animation.AnimationTimer;
+import javafx.animation.FillTransition;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
@@ -13,6 +14,7 @@ import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.util.Duration;
 
 public class MetronomeView extends Pane {
 
@@ -76,11 +78,14 @@ public class MetronomeView extends Pane {
         SpinnerValueFactory<Integer> valueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(20, 260, bpm, 1);
         bpmSpinner.setValueFactory(valueFactory);
 
-        // Círculos indicadores
         circle1 = new Circle(20, Color.RED);
+        circle1.getStyleClass().add("circle");
         circle2 = new Circle(20, Color.WHITE);
+        circle2.getStyleClass().add("circle");
         circle3 = new Circle(20, Color.WHITE);
+        circle3.getStyleClass().add("circle");
         circle4 = new Circle(20, Color.WHITE);
+        circle4.getStyleClass().add("circle");
 
         circle1.setLayoutX(230);
         circle2.setLayoutX(280);
@@ -112,7 +117,7 @@ public class MetronomeView extends Pane {
         // Botón start/stop
         startStopButton = new Button("Start");
         startStopButton.setLayoutX(50);
-        startStopButton.setLayoutY(220);
+        startStopButton.setLayoutY(180);
         startStopButton.setOnAction(e -> {
             if (running) {
                 stop();
@@ -126,6 +131,8 @@ public class MetronomeView extends Pane {
         });
 
         getChildren().addAll(bpmLabel, bpmSlider, bpmSpinner, startStopButton);
+        getStylesheets().add(getClass().getResource("/css/mtrne.css").toExternalForm());
+
     }
 
     private void start() {
@@ -168,12 +175,21 @@ public class MetronomeView extends Pane {
     private void tick() {
         resetCircles();
 
-        switch (currentBeat) {
-            case 0 -> circle1.setFill(Color.GREEN);
-            case 1 -> circle2.setFill(Color.GREEN);
-            case 2 -> circle3.setFill(Color.GREEN);
-            case 3 -> circle4.setFill(Color.GREEN);
-        }
+        Circle currentCircle = switch (currentBeat) {
+            case 0 -> circle1;
+            case 1 -> circle2;
+            case 2 -> circle3;
+            case 3 -> circle4;
+            default -> circle1;
+        };
+
+        Color targetColor = (currentBeat == 0) ? Color.YELLOW : Color.GREEN;
+
+
+        FillTransition ft = new FillTransition(Duration.millis(150), currentCircle, Color.WHITE, targetColor);
+        ft.setAutoReverse(true);
+        ft.setCycleCount(2);
+        ft.play();
 
         try {
             if (currentBeat == 0) {
@@ -191,6 +207,7 @@ public class MetronomeView extends Pane {
 
         currentBeat = (currentBeat + 1) % 4;
     }
+
 
     private void resetCircles() {
         circle1.setFill(Color.WHITE);

@@ -1,0 +1,16 @@
+.circle{
+	-fx-stroke: black;
+	-fx-stroke-width: 2.5px;
+}
+
+Button{
+	-fx-cursor: hand;
+}
+
+Spinner{
+	-fx-cursor: hand;
+}
+
+Slider{
+	-fx-cursor: hand;
+}

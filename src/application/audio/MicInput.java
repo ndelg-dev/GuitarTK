@@ -4,69 +4,83 @@ import javax.sound.sampled.*;
 
 public class MicInput {
 
-    private int sampleRate = 44100;
-    private int bufferSize = 2048;
-    private TargetDataLine mic;
-    private boolean running = false;
+    private final int sampleRate = 44100;
+    private final int bufferSize = 2048;
+
+    public boolean running = false;
+    private Thread micThread;
 
     public interface FrequencyListener {
         void onFrequencyDetected(double freq);
     }
 
-    private FrequencyListener listener;
+    private final FrequencyListener listener;
 
     public MicInput(FrequencyListener listener) {
         this.listener = listener;
     }
 
+    
     public void start() {
-        try {
-            AudioFormat format = new AudioFormat(sampleRate, 16, 1, true, true);
-            DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
-            mic = (TargetDataLine) AudioSystem.getLine(info);
-            mic.open(format);
-            mic.start();
-            running = true;
+        if (running) return;
+        running = true;
 
-            byte[] buffer = new byte[bufferSize * 2];
+        micThread = new Thread(() -> {
+            TargetDataLine mic = null;
+            try {
+                AudioFormat format = new AudioFormat(sampleRate, 16, 1, true, true);
+                DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
+                mic = (TargetDataLine) AudioSystem.getLine(info);
+                mic.open(format);
+                mic.start();
 
-            Thread thread = new Thread(() -> {
+                byte[] buffer = new byte[bufferSize * 2];
+
                 while (running) {
-                    try {
-                        int bytesRead = mic.read(buffer, 0, buffer.length);
-                        if (bytesRead <= 0) continue;
+                    int bytesRead = mic.read(buffer, 0, buffer.length);
+                    if (bytesRead <= 0) continue;
 
-                        short[] samples = new short[bytesRead / 2];
-                        for (int i = 0; i < samples.length; i++) {
-                            samples[i] = (short) ((buffer[2 * i] << 8) | (buffer[2 * i + 1] & 0xFF));
-                        }
-
-                        double freq = detectFrequency(samples, sampleRate);
-
-                        if (freq > 50 && freq < 1000 && listener != null) {
-                            listener.onFrequencyDetected(freq);
-                        }
-
-                        Thread.sleep(20); // pequeño delay
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    short[] samples = new short[bytesRead / 2];
+                    for (int i = 0; i < samples.length; i++) {
+                        samples[i] = (short) ((buffer[2 * i] << 8) | (buffer[2 * i + 1] & 0xFF));
                     }
-                }
-            });
-            thread.setDaemon(true);
-            thread.start();
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+                    double freq = detectFrequency(samples, sampleRate);
+
+
+                    if (freq > 50 && freq < 1000 && listener != null) {
+                        listener.onFrequencyDetected(freq);
+                    }
+
+                    Thread.sleep(20);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                if (mic != null) {
+                    try {
+                        mic.stop();
+                        mic.close();
+                    } catch (Exception ignored) {}
+                }
+            }
+        });
+
+        micThread.setDaemon(true);
+        micThread.start();
     }
+
 
     public void stop() {
         running = false;
-        if (mic != null) mic.stop();
+        if (micThread != null && micThread.isAlive()) {
+            try {
+                micThread.join(200);
+            } catch (InterruptedException ignored) {}
+        }
     }
 
-    // Método de autocorrelación (igual que antes)
     private double detectFrequency(short[] samples, int sampleRate) {
         int size = samples.length;
         double[] autocorr = new double[size];
